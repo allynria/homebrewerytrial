@@ -118,7 +118,7 @@ const CodeEditor = createClass({
 	
 		// Regular expression to match the {hyperpage} tag and extract the page number
 		const hyperpageRegex = /\{hyperpage:(\d+)\}/g; // Matches any digit sequence after {hyperpage:}
-	
+		let pageNumber = null;
 	
 		// Iterate over each match of the {hyperpage} tag in the content
 		let match;
@@ -132,10 +132,14 @@ const CodeEditor = createClass({
 			// Check if the extracted page number is a valid integer
 			if (!isNaN(page)) {
 				pageNumber = parseInt(page);
-				console.log("Matched Page Number:", page);
 				// Break the loop after finding the first valid page number
 				break;
 			}
+		}
+	
+		// If pageNumber is still null here, no match was found
+		if (pageNumber === null) {
+			console.log("No valid page number found.");
 		}
 	
 		return pageNumber;
