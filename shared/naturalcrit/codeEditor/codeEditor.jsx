@@ -147,28 +147,39 @@ const CodeEditor = createClass({
 	},
 
 
-    // Function to update the table of contents
-    updateTableOfContents: async function (content) {
-        try {
-            // Use Cheerio to parse the HTML content and extract headers
-            const $ = cheerio.load(content);
-            const headers = $('h1, h2, h3, h4, h5, h6').map((index, element) => {
-                return {
-                    level: parseInt($(element).prop('tagName').substring(1)),
-                    text: $(element).text(),
-                    id: $(element).attr('id')
-                };
-            }).get();
-
-            // Update the table of contents in component state
-            this.setState({ tableOfContents: headers });
-
-            // Trigger a callback function passed as a prop to update the TOC in the parent component
-            this.props.onUpdateTableOfContents(headers);
-        } catch (error) {
-            console.error('Error updating table of contents:', error);
-        }
-    },
+	updateTableOfContents: async function (content) {
+		try {
+			const $ = cheerio.load(content);
+	
+			// Iterate over each header element and insert a {hyperpage} tag with the corresponding page number
+			$('h1, h2, h3, h4, h5, h6').each((index, element) => {
+				const pageNumber = index + 1; // Assuming each header represents a new page, adjust this logic if needed
+				const headerText = $(element).text();
+	
+				// Insert {hyperpage} tag with the page number after the header text
+				$(element).append(` {hyperpage:${pageNumber}}`);
+	
+				// Update the ID of the header element if necessary
+				$(element).attr('id', headerText.replace(/\s+/g, '-').toLowerCase()); // Convert header text to kebab case for ID
+			});
+	
+			// Update the table of contents in component state
+			const headers = $('h1, h2, h3, h4, h5, h6').map((index, element) => {
+				return {
+					level: parseInt($(element).prop('tagName').substring(1)),
+					text: $(element).text(),
+					id: $(element).attr('id')
+				};
+			}).get();
+	
+			this.setState({ tableOfContents: headers });
+	
+			// Trigger a callback function passed as a prop to update the TOC in the parent component
+			this.props.onUpdateTableOfContents(headers);
+		} catch (error) {
+			console.error('Error updating table of contents:', error);
+		}
+	},
 
 	buildEditor : function() {
 		this.codeMirror = CodeMirror(this.refs.editor, {
