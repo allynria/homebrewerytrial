@@ -107,15 +107,18 @@ const CodeEditor = createClass({
 		if (prevProps.value !== this.props.value) {
 			const pageNumber = this.extractHyperpageNumber(this.props.value);
 			console.log("Hyperpage number:", pageNumber);
-			if (pageNumber !== this.state.pageNumber) { // Only update state if page number changes
+			if (pageNumber !== prevState.pageNumber) {
 				this.setState({ pageNumber });
 			}
 		}
 	},
-	extractHyperpageNumber : (content) => {
+	extractHyperpageNumber: function (content) {
+		// Log the content to see what is being passed to the function
+		console.log("Content:", content);
+	
 		// Regular expression to match the {hyperpage} tag and extract the page number
-		const hyperpageRegex = /\{hyperpage:([^\}]+)\}/g;
-		let pageNumber = null;
+		const hyperpageRegex = /\{hyperpage:(\d+)\}/g; // Matches any digit sequence after {hyperpage:}
+	
 	
 		// Iterate over each match of the {hyperpage} tag in the content
 		let match;
@@ -123,9 +126,13 @@ const CodeEditor = createClass({
 			// Extract the page number from the matched group
 			const page = match[1].trim();
 	
+			// Log the matched page number
+			console.log("Match:", match);
+	
 			// Check if the extracted page number is a valid integer
 			if (!isNaN(page)) {
 				pageNumber = parseInt(page);
+				console.log("Matched Page Number:", page);
 				// Break the loop after finding the first valid page number
 				break;
 			}
@@ -133,6 +140,7 @@ const CodeEditor = createClass({
 	
 		return pageNumber;
 	},
+
 	render() {
 		const { pageNumber } = this.state; 
 	
@@ -142,6 +150,7 @@ const CodeEditor = createClass({
 				<div className="hyperpage-display">
 					Hyperpage: {pageNumber !== null ? pageNumber : 'N/A'}
 				</div>
+				console.log("Extracted Page Number:", pageNumber);
 			</>
 		);
 	},
