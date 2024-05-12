@@ -114,23 +114,23 @@ const CodeEditor = createClass({
 	},
 	extractHyperpageNumber: function (content) {
 		// Regular expression to match the {hyperpage} tag and extract the page number
-		const hyperpageRegex = /\{hyperpage:(.*?)\}/;
-		
+		const hyperpageRegex = /\{hyperpage:\s*(\d+)\}/;
+	
 		// Attempt to match the regex in the content
 		const match = content.match(hyperpageRegex);
-		
+	
 		// If a match is found
 		if (match) {
 			// Extract the page number from the captured group
-			const pageNumber = match[1].trim();
-			
+			const pageNumber = parseInt(match[1].trim());
+	
 			// Check if the extracted page number is a valid integer
 			if (!isNaN(pageNumber)) {
-				// Convert the page number to an integer and return it
-				return parseInt(pageNumber);
+				// Return the extracted page number
+				return pageNumber;
 			}
 		}
-		
+	
 		// If no match was found or the extracted page number is not valid, return null
 		return null;
 	},
@@ -150,41 +150,45 @@ const CodeEditor = createClass({
 		);
 	},
 
-
 	updateTableOfContents: async function (content) {
 		try {
 			const $ = cheerio.load(content);
+	
+			// Clear the existing table of contents
+			this.setState({ tableOfContents: [] });
 	
 			// Iterate over each header element and insert a {hyperpage} tag with the corresponding page number
 			$('h1, h2, h3, h4, h5, h6').each((index, element) => {
 				const pageNumber = index + 1; // Assuming each header represents a new page, adjust this logic if needed
 				const headerText = $(element).text();
+				const headerId = $(element).attr('id');
 	
 				// Insert {hyperpage} tag with the page number after the header text
 				$(element).append(` {hyperpage:${pageNumber}}`);
 	
 				// Update the ID of the header element if necessary
 				$(element).attr('id', headerText.replace(/\s+/g, '-').toLowerCase()); // Convert header text to kebab case for ID
+	
+				// Create an entry for the table of contents
+				const tocEntry = {
+					level: parseInt($(element).prop('tagName').substring(1)),
+					text: headerText,
+					id: headerId,
+					pageNumber: pageNumber // Include the page number in the table of contents entry
+				};
+	
+				// Add the entry to the table of contents array
+				this.setState(prevState => ({
+					tableOfContents: [...prevState.tableOfContents, tocEntry]
+				}));
 			});
 	
-			// Update the table of contents in component state
-			const headers = $('h1, h2, h3, h4, h5, h6').map((index, element) => {
-				return {
-					level: parseInt($(element).prop('tagName').substring(1)),
-					text: $(element).text(),
-					id: $(element).attr('id')
-				};
-			}).get();
-	
-			this.setState({ tableOfContents: headers });
-	
 			// Trigger a callback function passed as a prop to update the TOC in the parent component
-			this.props.onUpdateTableOfContents(headers);
+			this.props.onUpdateTableOfContents(this.state.tableOfContents);
 		} catch (error) {
 			console.error('Error updating table of contents:', error);
 		}
 	},
-
 	buildEditor : function() {
 		this.codeMirror = CodeMirror(this.refs.editor, {
 			lineNumbers       : true,
