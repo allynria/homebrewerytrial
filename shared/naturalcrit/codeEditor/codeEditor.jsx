@@ -73,11 +73,11 @@ const CodeEditor = createClass({
         this.codeMirror.swapDoc(newDoc);
     },
 
-	componentDidUpdate: function (prevProps) {
-		if(prevProps.view !== this.props.view){ 
+	componentDidUpdate: function (prevProps, prevState) {
+		if (prevProps.view !== this.props.view) { 
 			let newDoc;
 	
-			if(!this.state.docs[this.props.view]) {
+			if (!this.state.docs[this.props.view]) {
 				newDoc = CodeMirror.Doc(this.props.value, this.props.language);
 			} else {
 				newDoc = this.state.docs[this.props.view];
@@ -85,22 +85,22 @@ const CodeEditor = createClass({
 	
 			const oldDoc = { [prevProps.view]: this.codeMirror.swapDoc(newDoc) };
 	
-			this.setState((prevState)=>({
-				docs : _.merge({}, prevState.docs, oldDoc)
+			this.setState((prevState) => ({
+				docs: _.merge({}, prevState.docs, oldDoc)
 			}));
 	
 			this.props.rerenderParent();
-		} else if(this.codeMirror?.getValue() != this.props.value) { 
+		} else if (this.codeMirror?.getValue() != this.props.value) { 
 			this.codeMirror.setValue(this.props.value);
 		}
 	
-		if(this.props.enableFolding) {
+		if (this.props.enableFolding) {
 			this.codeMirror.setOption('foldOptions', this.foldOptions(this.codeMirror));
 		} else {
 			this.codeMirror.setOption('foldOptions', false);
 		}
 	
-		if(prevProps.editorTheme !== this.props.editorTheme){
+		if (prevProps.editorTheme !== this.props.editorTheme) {
 			this.codeMirror.setOption('theme', this.props.editorTheme);
 		}
 		
