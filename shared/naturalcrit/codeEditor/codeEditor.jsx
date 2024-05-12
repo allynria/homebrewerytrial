@@ -62,7 +62,8 @@ const CodeEditor = createClass({
     getInitialState: function () {
         return {
             docs: {},
-            tableOfContents: [] // Initialize table of contents state
+            tableOfContents: [], // Initialize table of contents state
+			pageNumber: null // Initialize pageNumber to null
         };
     },
 
@@ -72,40 +73,79 @@ const CodeEditor = createClass({
         this.codeMirror.swapDoc(newDoc);
     },
 
-    componentDidUpdate: function (prevProps) {
-		if(prevProps.view !== this.props.view){ //view changed; swap documents
+	componentDidUpdate: function (prevProps) {
+		if(prevProps.view !== this.props.view){ 
 			let newDoc;
-
+	
 			if(!this.state.docs[this.props.view]) {
 				newDoc = CodeMirror.Doc(this.props.value, this.props.language);
 			} else {
 				newDoc = this.state.docs[this.props.view];
 			}
-
+	
 			const oldDoc = { [prevProps.view]: this.codeMirror.swapDoc(newDoc) };
-
+	
 			this.setState((prevState)=>({
 				docs : _.merge({}, prevState.docs, oldDoc)
 			}));
-
+	
 			this.props.rerenderParent();
-		} else if(this.codeMirror?.getValue() != this.props.value) { //update editor contents if brew.text is changed from outside
+		} else if(this.codeMirror?.getValue() != this.props.value) { 
 			this.codeMirror.setValue(this.props.value);
 		}
-
+	
 		if(this.props.enableFolding) {
 			this.codeMirror.setOption('foldOptions', this.foldOptions(this.codeMirror));
 		} else {
 			this.codeMirror.setOption('foldOptions', false);
 		}
-
+	
 		if(prevProps.editorTheme !== this.props.editorTheme){
 			this.codeMirror.setOption('theme', this.props.editorTheme);
 		}
+		
 		if (prevProps.value !== this.props.value) {
-            this.updateTableOfContents(this.props.value);
-        }
-    },
+			const pageNumber = this.extractHyperpageNumber(this.props.value);
+			console.log("Hyperpage number:", pageNumber);
+			if (pageNumber !== this.state.pageNumber) { // Only update state if page number changes
+				this.setState({ pageNumber });
+			}
+		}
+	},
+	extractHyperpageNumber : (content) => {
+		// Regular expression to match the {hyperpage} tag and extract the page number
+		const hyperpageRegex = /\{hyperpage:([^\}]+)\}/g;
+		let pageNumber = null;
+	
+		// Iterate over each match of the {hyperpage} tag in the content
+		let match;
+		while ((match = hyperpageRegex.exec(content)) !== null) {
+			// Extract the page number from the matched group
+			const page = match[1].trim();
+	
+			// Check if the extracted page number is a valid integer
+			if (!isNaN(page)) {
+				pageNumber = parseInt(page);
+				// Break the loop after finding the first valid page number
+				break;
+			}
+		}
+	
+		return pageNumber;
+	},
+	render() {
+		const { pageNumber } = this.state; 
+	
+		return (
+			<>
+				{/* Your existing code for editor */}
+				<div className="hyperpage-display">
+					Hyperpage: {pageNumber !== null ? pageNumber : 'N/A'}
+				</div>
+			</>
+		);
+	},
+
 
     // Function to update the table of contents
     updateTableOfContents: async function (content) {
