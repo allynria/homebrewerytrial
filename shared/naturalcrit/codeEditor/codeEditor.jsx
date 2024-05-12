@@ -113,37 +113,28 @@ const CodeEditor = createClass({
 		}
 	},
 	extractHyperpageNumber: function (content) {
-		// Log the content to see what is being passed to the function
-		console.log("Content:", content);
-	
 		// Regular expression to match the {hyperpage} tag and extract the page number
-		const hyperpageRegex = /\{hyperpage:(\d+)\}/g; // Matches any digit sequence after {hyperpage:}
-		let pageNumber = null;
-	
-		// Iterate over each match of the {hyperpage} tag in the content
-		let match;
-		while ((match = hyperpageRegex.exec(content)) !== null) {
-			// Extract the page number from the matched group
-			const page = match[1].trim();
-	
-			// Log the matched page number
-			console.log("Match:", match);
-	
+		const hyperpageRegex = /\{hyperpage:(.*?)\}/;
+		
+		// Attempt to match the regex in the content
+		const match = content.match(hyperpageRegex);
+		
+		// If a match is found
+		if (match) {
+			// Extract the page number from the captured group
+			const pageNumber = match[1].trim();
+			
 			// Check if the extracted page number is a valid integer
-			if (!isNaN(page)) {
-				pageNumber = parseInt(page);
-				// Break the loop after finding the first valid page number
-				break;
+			if (!isNaN(pageNumber)) {
+				// Convert the page number to an integer and return it
+				return parseInt(pageNumber);
 			}
 		}
-	
-		// If pageNumber is still null here, no match was found
-		if (pageNumber === null) {
-			console.log("No valid page number found.");
-		}
-	
-		return pageNumber;
+		
+		// If no match was found or the extracted page number is not valid, return null
+		return null;
 	},
+	
 
 	render() {
 		const { pageNumber } = this.state; 
