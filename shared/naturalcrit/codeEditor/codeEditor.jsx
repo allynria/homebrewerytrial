@@ -139,13 +139,14 @@ const CodeEditor = createClass({
 	render() {
 		const { pageNumber } = this.state; 
 	
+		console.log("Extracted Page Number:", pageNumber);
+	
 		return (
 			<>
 				{/* Your existing code for editor */}
 				<div className="hyperpage-display">
 					Hyperpage: {pageNumber !== null ? pageNumber : 'N/A'}
 				</div>
-				console.log("Extracted Page Number:", pageNumber);
 			</>
 		);
 	},
