@@ -6,70 +6,73 @@ const _ = require('lodash');
 const cx = require('classnames');
 const closeTag = require('./close-tag');
 const autoCompleteEmoji = require('./autocompleteEmoji');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 let CodeMirror;
-if(typeof window !== 'undefined'){
-	CodeMirror = require('codemirror');
+if (typeof window !== 'undefined') {
+    CodeMirror = require('codemirror');
 
-	//Language Modes
-	require('codemirror/mode/gfm/gfm.js'); //Github flavoured markdown
-	require('codemirror/mode/css/css.js');
-	require('codemirror/mode/javascript/javascript.js');
+    // Language Modes
+    require('codemirror/mode/gfm/gfm.js'); // Github flavoured markdown
+    require('codemirror/mode/css/css.js');
+    require('codemirror/mode/javascript/javascript.js');
 
-	//Addons
-	//Code folding
-	require('codemirror/addon/fold/foldcode.js');
-	require('codemirror/addon/fold/foldgutter.js');
-	//Search and replace
-	require('codemirror/addon/search/search.js');
-	require('codemirror/addon/search/searchcursor.js');
-	require('codemirror/addon/search/jump-to-line.js');
-	require('codemirror/addon/search/match-highlighter.js');
-	require('codemirror/addon/search/matchesonscrollbar.js');
-	require('codemirror/addon/dialog/dialog.js');
-	//Trailing space highlighting
-	// require('codemirror/addon/edit/trailingspace.js');
-	//Active line highlighting
-	// require('codemirror/addon/selection/active-line.js');
-	//Scroll past last line
-	require('codemirror/addon/scroll/scrollpastend.js');
-	//Auto-closing
-	//XML code folding is a requirement of the auto-closing tag feature and is not enabled
-	require('codemirror/addon/fold/xml-fold.js');
-	require('codemirror/addon/edit/closetag.js');
-	//Autocompletion
-	require('codemirror/addon/hint/show-hint.js');
+    // Addons
+    // Code folding
+    require('codemirror/addon/fold/foldcode.js');
+    require('codemirror/addon/fold/foldgutter.js');
+    // Search and replace
+    require('codemirror/addon/search/search.js');
+    require('codemirror/addon/search/searchcursor.js');
+    require('codemirror/addon/search/jump-to-line.js');
+    require('codemirror/addon/search/match-highlighter.js');
+    require('codemirror/addon/search/matchesonscrollbar.js');
+    require('codemirror/addon/dialog/dialog.js');
+    // Trailing space highlighting
+    // require('codemirror/addon/edit/trailingspace.js');
+    // Active line highlighting
+    // require('codemirror/addon/selection/active-line.js');
+    // Scroll past last line
+    require('codemirror/addon/scroll/scrollpastend.js');
+    // Auto-closing
+    // XML code folding is a requirement of the auto-closing tag feature and is not enabled
+    require('codemirror/addon/fold/xml-fold.js');
+    require('codemirror/addon/edit/closetag.js');
+    // Autocompletion
+    require('codemirror/addon/hint/show-hint.js');
 
-	const foldCode = require('./fold-code');
-	foldCode.registerHomebreweryHelper(CodeMirror);
+    const foldCode = require('./fold-code');
+    foldCode.registerHomebreweryHelper(CodeMirror);
 }
 
 const CodeEditor = createClass({
-	displayName     : 'CodeEditor',
-	getDefaultProps : function() {
-		return {
-			language      : '',
-			value         : '',
-			wrap          : true,
-			onChange      : ()=>{},
-			enableFolding : true,
-			editorTheme   : 'default'
-		};
-	},
+    displayName: 'CodeEditor',
+    getDefaultProps: function () {
+        return {
+            language: '',
+            value: '',
+            wrap: true,
+            onChange: () => { },
+            enableFolding: true,
+            editorTheme: 'default'
+        };
+    },
 
-	getInitialState : function() {
-		return {
-			docs : {}
-		};
-	},
+    getInitialState: function () {
+        return {
+            docs: {},
+            tableOfContents: [] // Initialize table of contents state
+        };
+    },
 
-	componentDidMount : function() {
-		this.buildEditor();
-		const newDoc = CodeMirror.Doc(this.props.value, this.props.language);
-		this.codeMirror.swapDoc(newDoc);
-	},
+    componentDidMount: function () {
+        this.buildEditor();
+        const newDoc = CodeMirror.Doc(this.props.value, this.props.language);
+        this.codeMirror.swapDoc(newDoc);
+    },
 
-	componentDidUpdate : function(prevProps) {
+    componentDidUpdate: function (prevProps) {
 		if(prevProps.view !== this.props.view){ //view changed; swap documents
 			let newDoc;
 
@@ -99,7 +102,33 @@ const CodeEditor = createClass({
 		if(prevProps.editorTheme !== this.props.editorTheme){
 			this.codeMirror.setOption('theme', this.props.editorTheme);
 		}
-	},
+		if (prevProps.value !== this.props.value) {
+            this.updateTableOfContents(this.props.value);
+        }
+    },
+
+    // Function to update the table of contents
+    updateTableOfContents: async function (content) {
+        try {
+            // Use Cheerio to parse the HTML content and extract headers
+            const $ = cheerio.load(content);
+            const headers = $('h1, h2, h3, h4, h5, h6').map((index, element) => {
+                return {
+                    level: parseInt($(element).prop('tagName').substring(1)),
+                    text: $(element).text(),
+                    id: $(element).attr('id')
+                };
+            }).get();
+
+            // Update the table of contents in component state
+            this.setState({ tableOfContents: headers });
+
+            // Trigger a callback function passed as a prop to update the TOC in the parent component
+            this.props.onUpdateTableOfContents(headers);
+        } catch (error) {
+            console.error('Error updating table of contents:', error);
+        }
+    },
 
 	buildEditor : function() {
 		this.codeMirror = CodeMirror(this.refs.editor, {
